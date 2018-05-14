@@ -1,7 +1,14 @@
 package br.com.fiap.controller
 
+import br.com.fiap.entity.Car
+import br.com.fiap.entity.Coordinate
 import br.com.fiap.entity.User
+import br.com.fiap.service.CarService
+import br.com.fiap.service.TripService
+import br.com.fiap.service.UserService
 import org.json.JSONObject
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.client.RestTemplate
 import kotlin.collections.HashMap
@@ -10,28 +17,32 @@ import kotlin.collections.HashMap
 @RequestMapping("/trip")
 class TripController {
 
+    @Autowired
+    lateinit var carService: CarService
+
+    @Autowired
+    lateinit var userService: UserService
+
+    @Autowired
+    lateinit var tripService: TripService
+
     @GetMapping("/cost")
     fun cost(
-        @RequestParam("fromLatitude") fromLatitude: String,
-        @RequestParam("fromLongitude") fromLongitude: String,
-        @RequestParam("toLatitude") toLatitude: String,
-        @RequestParam("toLongitude") toLongitude: String
+        @RequestParam("fromLatitude") fromLatitude: Double,
+        @RequestParam("fromLongitude") fromLongitude: Double,
+        @RequestParam("toLatitude") toLatitude: Double,
+        @RequestParam("toLongitude") toLongitude: Double
     ): Map<String, String> {
         val valueKilometer = 2.00
         val valueMinute = 1.00
 
-        val url = "https://maps.googleapis.com/maps/api/directions/json?" +
-            "origin="+fromLatitude+","+fromLongitude+
-            "&destination="+toLatitude+","+toLongitude+"&mode=driving&units=metric&key=AIzaSyCEGLc7gR-7Ll229fcpLIjdh5yMfqqvvbg"
+        val fromCoordinate = Coordinate(fromLatitude, fromLongitude)
+        val toCoordinate = Coordinate(toLatitude, toLongitude)
 
-        var restTemplate = RestTemplate()
-        val response = restTemplate.getForObject(url, String::class.java)
-        var jsonObject  = JSONObject(response)
+        val distanceAndDuration = tripService.getDistanceAndDuration(fromCoordinate, toCoordinate)
 
-        val leg = jsonObject.getJSONArray("routes").getJSONObject(0).getJSONArray("legs").getJSONObject(0)
-
-        val distanceKm = leg.getJSONObject("distance").get("value").toString().toDouble() / 1000
-        val durationMinutes = leg.getJSONObject("duration").get("value").toString().toInt() / 60
+        val distanceKm = distanceAndDuration.getJSONObject("distance").getDouble("value") / 1000
+        val durationMinutes = distanceAndDuration.getJSONObject("duration").getInt("value") / 60
 
         var cost = (valueKilometer * distanceKm) + (valueMinute * durationMinutes)
 
@@ -42,17 +53,46 @@ class TripController {
     }
 
     @PostMapping("/request")
-    fun request(@RequestBody user: User) {
+    fun request(@RequestBody jsonString: String) {
+        val json = JSONObject(jsonString)
 
+        val user = userService.findById(json.getString("carId"))
+
+        val cars = carService.findByStatus(Car.STATUS_AVAIABLE)
+
+        if(cars == null) {
+            return
+        }
+
+        val location = Coordinate(
+            json.getJSONObject("location").getDouble("latitude"),
+            json.getJSONObject("location").getDouble("longitude")
+        )
+
+        var nearest = 99999.00
+        lateinit var choosedCar: Car
+
+        for(car in cars!!){
+            val distanceDuration = tripService.getDistanceAndDuration(location, car.lastLocation)
+
+            val distance = distanceDuration.getJSONObject("distance").getDouble("value") / 1000
+
+            if (distance < nearest) {
+                nearest = distance
+                choosedCar = car
+            }
+        }
+
+        carService.sendRequestTrip(choosedCar, user!!.id!!, location)
     }
 
     @PostMapping("/accept")
-    fun accept(@RequestParam("carId") carId: Int, @RequestParam("userId") userId: Int) {
+    fun accept(@RequestParam("carId") carId: String, @RequestParam("userId") userId: String) {
 
     }
 
     @PostMapping("/start")
-    fun start(@RequestParam("carId") carId: Int, @RequestParam("userId") userId: Int) {
+    fun start(@RequestParam("carId") carId: String, @RequestParam("userId") userId: String) {
 
     }
 

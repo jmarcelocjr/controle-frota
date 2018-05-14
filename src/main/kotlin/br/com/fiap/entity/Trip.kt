@@ -6,7 +6,7 @@ import java.util.*
 
 @Document
 data class Trip (
-    @Id var id: Int?,
+    @Id var id: String?,
     var user: User,
     var car: Car,
     var startedAt: Date,

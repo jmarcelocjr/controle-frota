@@ -10,6 +10,10 @@ class UserService {
     @Autowired
     lateinit var userRepository: UserRepository
 
+    fun findById(id: String): User? {
+        return userRepository.findById(id).orElse(null)
+    }
+
     fun findByLoginAndPassword(login: String, password: String): User? {
         return userRepository.findByLoginAndPassword(login, password)
     }
