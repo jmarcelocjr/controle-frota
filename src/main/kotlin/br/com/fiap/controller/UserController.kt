@@ -2,6 +2,7 @@ package br.com.fiap.controller
 
 import br.com.fiap.service.UserService
 import br.com.fiap.entity.User
+import org.json.JSONObject
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -16,8 +17,9 @@ class UserController {
     lateinit var userService: UserService
 
     @PostMapping("/login")
-    fun login(@RequestBody user: User): User? {
-        return userService.findByLoginAndPassword(user.login, user.password)
+    fun login(@RequestBody jsonString: String): User? {
+        val jsonObject = JSONObject(jsonString)
+        return userService.findByLoginAndPassword(jsonObject.getString("login"), jsonObject.getString("password"))
     }
 
     @PostMapping

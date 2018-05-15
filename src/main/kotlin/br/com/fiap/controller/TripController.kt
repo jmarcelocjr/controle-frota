@@ -88,7 +88,7 @@ class TripController {
         lateinit var choosedCar: Car
 
         for(car in cars){
-            val distanceDuration = tripService.getDistanceAndDuration(fromLocation, car.lastLocation)
+            val distanceDuration = tripService.getDistanceAndDuration(fromLocation, car.lastLocation!!)
 
             val distance = distanceDuration.getJSONObject("distance").getDouble("value") / 1000
 

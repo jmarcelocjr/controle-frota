@@ -7,8 +7,8 @@ import org.springframework.data.mongodb.core.mapping.Document
 data class Car(
         @Id var id: String?,
         var model: String,
-        var lastLocation: Coordinate,
-        var status: String
+        var lastLocation: Coordinate?,
+        var status: String = STATUS_AVAIABLE
 ) {
     companion object {
         val STATUS_AVAIABLE = "available"
