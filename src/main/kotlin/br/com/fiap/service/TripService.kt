@@ -13,6 +13,10 @@ class TripService {
     @Autowired
     lateinit var tripRepository: TripRepository
 
+    fun findById(id: String): Trip? {
+        return tripRepository.findById(id).orElse(null)
+    }
+
     fun save(trip: Trip) {
         tripRepository.save(trip)
     }
